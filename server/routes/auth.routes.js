@@ -2,7 +2,7 @@ import express from "express";
 import User from "../models/user.model.js";
 import { generateToken } from "../utils/generateToken.js";
 
-// Login and SingUp
+// Login and SingUp Routes
 
 const router = express.Router();
 // Sign up
@@ -48,11 +48,10 @@ router.post("/login", async (req, res) => {
   // 1. Destructure email and password from the request body
   const { email, password } = req.body;
 
-  // 2. Find the user by email
-  const user = await User.findOne({ email });
+  // 2. Find the user by email and explicitly select the password field
+  const user = await User.findOne({ email }).select('+password');
 
   // 3. Check if the user exists AND if the password is correct
-  // (Assuming your User model has a method like user.matchPassword to compare the plain text password to the hashed password)
   if (user && (await user.matchPassword(password))) {
     // 4. Generate a token
     const token = generateToken(user._id);

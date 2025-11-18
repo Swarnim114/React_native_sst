@@ -12,6 +12,10 @@ connectDB()
 
 const app = express()
 
+// Middleware to parse JSON and URL-encoded data
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
 app.use('/api/auth/' , authRoutes)
 
 
