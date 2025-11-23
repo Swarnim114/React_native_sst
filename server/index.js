@@ -16,7 +16,10 @@ app.use(express.json())
 
 
 
+import productRoutes from './routes/product.routes.js';
+
 app.use('/api/auth/', authRoutes)
+app.use('/api/products', productRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Server is running!' });
