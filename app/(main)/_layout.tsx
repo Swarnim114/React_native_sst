@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import "../global.css";
-export default function AuthLayout() {
+export default function MainLayout() {
     return (
         <Stack
             screenOptions={{

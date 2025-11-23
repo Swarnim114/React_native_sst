@@ -1,10 +1,59 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image } from 'react-native';
-
-
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { authApi, saveToken } from '../../utils/api';
 
 export default function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleLogin = async () => {
+    setError('');
+
+    if (!email.trim()) {
+      setError('Please enter your email');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (!password) {
+      setError('Please enter your password');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await authApi.login(email.trim(), password);
+      console.log('Login response:', response);
+
+      if (response && response.success && response.data?.token) {
+        await saveToken(response.data.token);
+        console.log('Token saved successfully');
+
+        console.log('Navigating to home...');
+        router.replace('/home');
+      } else {
+        const errorMsg = response?.message || 'Login failed. Please try again.';
+        setError(errorMsg);
+      }
+    } catch (error: any) {
+      console.error("Error on Login:", error);
+      const errorMessage = error?.message || 'An error occurred. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1 bg-emerald-50"
@@ -17,7 +66,7 @@ export default function LoginScreen() {
         {/* Logo + tagline */}
         <View className="items-center mb-6">
           <View className="h-16 w-16 rounded-2xl bg-emerald-600 items-center justify-center shadow">
-           
+
           </View>
           <Text style={styles.title} className="mt-4 text-3xl font-extrabold text-emerald-800">
             Login
@@ -34,6 +83,12 @@ export default function LoginScreen() {
           </Text>
 
           <View style={styles.form} className="w-full">
+            {error ? (
+              <View className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                <Text className="text-red-700 text-sm">{error}</Text>
+              </View>
+            ) : null}
+
             <View style={styles.inputContainer} className="mb-4">
               <Text style={styles.label} className="text-emerald-800 mb-2 font-medium">
                 Email
@@ -43,10 +98,11 @@ export default function LoginScreen() {
                 className="bg-white border border-emerald-200 rounded-2xl px-4 py-4 text-emerald-900"
                 placeholder="you@example.com"
                 placeholderTextColor="#6b7280"
-             
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
+                value={email}
+                onChangeText={setEmail}
               />
             </View>
 
@@ -59,10 +115,11 @@ export default function LoginScreen() {
                 className="bg-white border border-emerald-200 rounded-2xl px-4 py-4 text-emerald-900"
                 placeholder="••••••••"
                 placeholderTextColor="#6b7280"
-             
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="password"
+                value={password}
+                onChangeText={setPassword}
               />
             </View>
 
@@ -70,18 +127,18 @@ export default function LoginScreen() {
               <Text className="text-emerald-700 font-semibold">Forgot Password?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.loginButton]} 
-              
-            
+            <TouchableOpacity
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
             >
-              {/* {loading ? (
+              {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.loginButtonText} className="text-white text-lg font-semibold">
                   Continue
                 </Text>
-              )} */}
+              )}
             </TouchableOpacity>
 
             <View className="flex-row items-center my-4">
@@ -94,13 +151,13 @@ export default function LoginScreen() {
               <Text className="text-emerald-800 font-semibold">Continue with Google</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.linkButton}
               className="mt-6 items-center"
-            
+              onPress={() => router.push('/(auth)/signup')}
             >
               <Text style={styles.linkText} className="text-emerald-700">
-                Don’t have an account? <Text style={styles.linkTextBold} className="text-emerald-700 font-extrabold">Sign Up</Text>
+                Don't have an account? <Text style={styles.linkTextBold} className="text-emerald-700 font-extrabold">Sign Up</Text>
               </Text>
             </TouchableOpacity>
           </View>

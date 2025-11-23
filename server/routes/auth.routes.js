@@ -2,12 +2,13 @@ import express from "express";
 import User from "../models/user.model.js";
 import { generateToken } from "../utils/generateToken.js";
 
-// Login and SingUp Routes
 
 const router = express.Router();
-// Sign up
 
-router.post("/signup", async (req, res) => {
+
+//Register -------------------------------------------------------------
+
+router.post("/register", async (req, res) => {
   //
   const { name, email, password } = req.body;
 
@@ -42,13 +43,13 @@ router.post("/signup", async (req, res) => {
   });
 });
 
-// Login
+// Login --------------------------------------------------------
+
+import { protect } from "../middleware/authMiddleware.js";
 
 router.post("/login", async (req, res) => {
-  // 1. Destructure email and password from the request body
   const { email, password } = req.body;
 
-  // 2. Find the user by email and explicitly select the password field
   const user = await User.findOne({ email }).select('+password');
 
   // 3. Check if the user exists AND if the password is correct
@@ -76,6 +77,15 @@ router.post("/login", async (req, res) => {
       message: "Invalid email or password",
     });
   }
+});
+
+router.get("/me", protect, async (req, res) => {
+  res.status(200).json({
+    success: true,
+    data: {
+      user: req.user,
+    },
+  });
 });
 
 export default router;

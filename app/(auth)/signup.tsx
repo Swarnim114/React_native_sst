@@ -1,8 +1,65 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { authApi, saveToken } from '../../utils/api';
 
 export default function SignupScreenUI() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSignUp = async () => {
+    setError('');
+
+    if (!name.trim()) {
+      setError('Please enter your name');
+      return;
+    }
+
+    if (!email.trim()) {
+      setError('Please enter your email');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await authApi.signup(name.trim(), email.trim(), password);
+      console.log('Signup response:', response);
+
+      if (response && response.success && response.data?.token) {
+        await saveToken(response.data.token);
+        console.log('Token saved successfully');
+
+        console.log('Navigating to home...');
+        router.replace('/home');
+      } else {
+        const errorMsg = response?.message || 'Sign up failed. Please try again.';
+        setError(errorMsg);
+      }
+    } catch (error: any) {
+      console.error("Error on Sign up:", error);
+      const errorMessage = error?.message || 'An error occurred. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1 bg-emerald-50"
@@ -11,7 +68,7 @@ export default function SignupScreenUI() {
       <View className="absolute -top-20 -right-16 h-56 w-56 rounded-full bg-emerald-200/60" />
       <View className="absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-lime-200/50" />
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         className="px-6"
@@ -37,6 +94,12 @@ export default function SignupScreenUI() {
             </Text>
 
             <View style={styles.form} className="w-full">
+              {error ? (
+                <View className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <Text className="text-red-700 text-sm">{error}</Text>
+                </View>
+              ) : null}
+
               <View style={styles.inputContainer} className="mb-4">
                 <Text style={styles.label} className="text-emerald-800 mb-2 font-medium">
                   Name
@@ -48,6 +111,8 @@ export default function SignupScreenUI() {
                   placeholderTextColor="#6b7280"
                   autoCapitalize="words"
                   autoComplete="name"
+                  value={name}
+                  onChangeText={setName}
                 />
               </View>
 
@@ -63,6 +128,8 @@ export default function SignupScreenUI() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
+                  value={email}
+                  onChangeText={setEmail}
                 />
               </View>
 
@@ -78,6 +145,8 @@ export default function SignupScreenUI() {
                   secureTextEntry
                   autoCapitalize="none"
                   autoComplete="password-new"
+                  value={password}
+                  onChangeText={setPassword}
                 />
               </View>
 
@@ -85,15 +154,20 @@ export default function SignupScreenUI() {
                 By continuing, you agree to our Terms & Privacy Policy.
               </Text>
 
-              <TouchableOpacity 
-                style={styles.signupButton}
+              <TouchableOpacity
+                style={[styles.signupButton, loading && styles.signupButtonDisabled]}
                 className="rounded-2xl py-4 items-center mt-4 bg-emerald-600 shadow"
-                // No onPress – purely presentational
+                onPress={handleSignUp}
                 activeOpacity={0.8}
+                disabled={loading}
               >
-                <Text style={styles.signupButtonText} className="text-white text-lg font-semibold">
-                  Create Account
-                </Text>
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.signupButtonText} className="text-white text-lg font-semibold">
+                    Create Account
+                  </Text>
+                )}
               </TouchableOpacity>
 
               <View className="flex-row items-center my-4">
@@ -106,10 +180,10 @@ export default function SignupScreenUI() {
                 <Text className="text-emerald-800 font-semibold">Sign up with Google</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.linkButton}
                 className="mt-6 items-center"
-                // No onPress – purely presentational
+                onPress={() => router.push('/(auth)/login')}
                 activeOpacity={0.8}
               >
                 <Text style={styles.linkText} className="text-emerald-700">
@@ -196,6 +270,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
+  },
+  signupButtonDisabled: {
+    opacity: 0.6,
   },
   linkButton: {
     marginTop: 24,

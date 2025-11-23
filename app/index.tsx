@@ -1,26 +1,68 @@
-import { useRouter } from 'expo-router';
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Stack, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { authApi, getToken } from '../utils/api';
 import "./global.css";
 
 const Index = () => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-  const router = useRouter()
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const token = await getToken();
+
+      if (token) {
+        // Verify token by getting current user
+        try {
+          const response = await authApi.getCurrentUser();
+          if (response && response.success) {
+            // Token is valid, redirect to home
+            router.replace('/home');
+            return;
+          }
+        } catch (error) {
+          // Token is invalid, clear it and show login screen
+          console.log('Token verification failed:', error);
+        }
+      }
+      // No token or invalid token, stay on login screen
+      setLoading(false);
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#1E88E5" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-       <View style={styles.content}>
-           <Text style={styles.title}>Welcome</Text>
-           <Text style={styles.subtitle}>Login or Singup to FarmFresh</Text>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.content}>
+        <Text style={styles.title}>Welcome</Text>
+        <Text style={styles.subtitle}>Login or Singup to FarmFresh</Text>
 
-           <TouchableOpacity style={[styles.button , styles.loginButton]}>
-              <Text style={styles.buttonText} onPress={() => router.push('/(auth)/login')} >Login</Text>
-           </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, styles.loginButton]} onPress={() => router.push('/(auth)/login')}>
+          <Text style={styles.buttonText} onPress={() => router.push('/(auth)/login')} >Login</Text>
+        </TouchableOpacity>
 
 
-           <TouchableOpacity style={[styles.button , styles.signupButton]}>
-              <Text style={styles.signupButtonText}  onPress={() => router.push('/(auth)/signup')}>Sign Up</Text>
-           </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, styles.signupButton]} onPress={() => router.push('/(auth)/signup')}>
+          <Text style={styles.signupButtonText} onPress={() => router.push('/(auth)/signup')}>Sign Up</Text>
+        </TouchableOpacity>
 
-       </View>
+      </View>
     </View>
   )
 }
